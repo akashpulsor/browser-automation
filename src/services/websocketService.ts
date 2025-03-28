@@ -1,17 +1,17 @@
 // src/services/websocketService.ts
-import { WebSocketManager } from '../utils/websocketManager';
+import WebSocketClientManager  from '../utils/WebSocketClientManager';
 import { logger } from '../utils/logger';
 
 export default class WebSocketService {
-  private wsManager: WebSocketManager;
+  private wsManager: WebSocketClientManager;
 
   constructor() {
-    this.wsManager = WebSocketManager.getInstance();
+    this.wsManager = WebSocketClientManager.getInstance();
   }
 
   sendMessage(message: string) {
     try {
-      this.wsManager.broadcast(message);
+      this.wsManager.send(message);
       logger.info(`Sent WebSocket message: ${message}`);
     } catch (error) {
       logger.error('Failed to send WebSocket message', error);

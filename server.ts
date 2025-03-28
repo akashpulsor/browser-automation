@@ -1,6 +1,6 @@
 import express from 'express';
 import http from 'http';
-import { WebSocketManager } from './src/utils/websocketManager';
+import WebSocketClientManager  from './src/utils/WebSocketClientManager';
 import browserRoutes from './src/routes/browserRoutes';
 import config from './config/app.config';
 import { logger } from './src/utils/logger';
@@ -15,14 +15,14 @@ app.use(express.json());
 app.use('/browser', browserRoutes);
 
 // Initialize WebSocket
-const wsManager = WebSocketManager.getInstance();
+const wsManager = WebSocketClientManager.getInstance();
 
 // Start server
 const startServer = async () => {
   try {
     // Initialize WebSocket with HTTP server
-    //await initializeWebSocketServer(server);
-
+    initializeWebSocketServer();
+    //await wsManager.connect();
     server.listen(config.port, () => {
       logger.info(`Server running on port ${config.port}`);
     });
@@ -33,10 +33,10 @@ const startServer = async () => {
 };
 
 // Function to initialize WebSocket server
-const initializeWebSocketServer = async (server: http.Server) => {
+const initializeWebSocketServer = async () => {
     while (true) {
         try {
-        await wsManager.initializeServer(server);
+        await wsManager.connect();
         logger.info('WebSocket server initialized successfully');
         } catch (error) {
         logger.error('Failed to initialize WebSocket server', error);
