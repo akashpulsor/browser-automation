@@ -34,15 +34,23 @@ const startServer = async () => {
 
 // Function to initialize WebSocket server
 const initializeWebSocketServer = async () => {
-    while (true) {
-        try {
+    try {
         await wsManager.connect();
         logger.info('WebSocket server initialized successfully');
-        } catch (error) {
+          
+        // Setup global error handlers to reconnect if needed
+        process.on('uncaughtException', (error) => {
+          logger.error('Uncaught exception:', error);
+        });
+          
+        process.on('unhandledRejection', (reason, promise) => {
+          logger.error('Unhandled rejection at:', promise, 'reason:', reason);
+        });
+          
+      } catch (error) {
         logger.error('Failed to initialize WebSocket server', error);
         throw error;
-        }
-    }
+      }
   };
   
 // Error handling middleware
