@@ -1,14 +1,15 @@
-// config/websocket.config.ts
-export interface WebSocketConfig {
-    port: number;
-    pingInterval?: number;
-    reconnectDelay?: number;
+export interface WebSocketClientConfig {
+    url: string;
+    reconnectAttempts: number;
+    reconnectInterval: number;
   }
   
-  const config: WebSocketConfig = {
-    port: parseInt(process.env.WEBSOCKET_PORT || '8080', 10),
-    pingInterval: 30000,
-    reconnectDelay: 5000
+  export const defaultConfig: WebSocketClientConfig = {
+    url: 'ws://localhost:8080/api/call/browser',
+    reconnectAttempts: 5,
+    reconnectInterval: 3000 // 3 seconds
   };
   
+  // Export the default config as the default export
+  const config = defaultConfig;
   export default config;
