@@ -1,6 +1,7 @@
 // src/controllers/browserController.ts
 import { BrowserSessionManager } from '../services/browserSessionManager';
 import WebSocketClientManager  from '../utils/WebSocketClientManager';
+import { getPageMetadata, PageMetadata } from '../utils/pageMetadataUtils';
 import { logger } from '../utils/logger';
 
 export class BrowserController {
@@ -19,6 +20,27 @@ export class BrowserController {
       }
 
         const session = await this.browserSessionManager.createSession(url);
+        const page = session.page;
+
+        if (page) {
+            const metadata = await getPageMetadata(page, true);
+            if (this.websocketClientManager.isConnected()) {
+                let res = {
+                    type: 'initialSessionData',
+                    sessionId: session.id,
+                    launchedUrl: url,
+                    timestamp: new Date().toISOString(),
+                    metadata:metadata
+                    // Consider sending the full element list and DOM snapshot in chunks or on demand
+                  };
+                console.log(res);  
+                this.websocketClientManager.send(res);
+                logger.info(`Sent initial session data with info for elements (limited), DOM snapshot snippet, and screenshot (limited) to WebSocket`, { sessionId: session.id });
+              } else {
+                logger.warn('WebSocket is not connected, cannot send initial session data.');
+              }
+        }
+
         // Send data to WebSocket after launching the session
         const streamResult = await this.startStream(session.id, 100); // Stream every 100ms
         console.log(streamResult);
