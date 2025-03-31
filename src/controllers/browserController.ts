@@ -2,6 +2,7 @@
 import { BrowserSessionManager } from '../services/browserSessionManager';
 import WebSocketClientManager  from '../utils/WebSocketClientManager';
 import { getPageMetadata, PageMetadata } from '../utils/pageMetadataUtils';
+import express, { Request } from 'express';
 import { logger } from '../utils/logger';
 
 export class BrowserController {
@@ -13,7 +14,8 @@ export class BrowserController {
     this.websocketClientManager = WebSocketClientManager.getInstance();
   }
 
-  async launchBrowser(url: string) {
+  async launchBrowser(req: Request) {
+    const { url, sessionId,portalId,llmId, browserSessionId } = req.body;
     try {
       if (!url) {
         throw new Error('URL is required');
@@ -27,7 +29,11 @@ export class BrowserController {
             if (this.websocketClientManager.isConnected()) {
                 let res = {
                     type: 'initialSessionData',
-                    sessionId: session.id,
+                    browserRunId: session.id,
+                    sessionId: sessionId,
+                    portalId:portalId,
+                    llmId: llmId,
+                    browserSessionId: browserSessionId,
                     launchedUrl: url,
                     timestamp: new Date().toISOString(),
                     metadata:metadata
