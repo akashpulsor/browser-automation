@@ -1,6 +1,6 @@
 import express from 'express';
 import http from 'http';
-import WebSocketClientManager  from './src/utils/WebSocketClientManager';
+import WebSocketClientManager from './src/utils/WebSocketClientManager';
 import browserRoutes from './src/routes/browserRoutes';
 import config from './config/app.config';
 import { logger } from './src/utils/logger';
@@ -21,8 +21,8 @@ const wsManager = WebSocketClientManager.getInstance();
 const startServer = async () => {
   try {
     // Initialize WebSocket with HTTP server
-    initializeWebSocketServer();
-    //await wsManager.connect();
+    await initializeWebSocketServer();
+    
     server.listen(config.port, () => {
       logger.info(`Server running on port ${config.port}`);
     });
@@ -32,26 +32,69 @@ const startServer = async () => {
   }
 };
 
-// Function to initialize WebSocket server
+// Function to initialize WebSocket server with reconnection logic
 const initializeWebSocketServer = async () => {
-    try {
-        await wsManager.connect();
-        logger.info('WebSocket server initialized successfully');
-          
-        // Setup global error handlers to reconnect if needed
-        process.on('uncaughtException', (error) => {
-          logger.error('Uncaught exception:', error);
-        });
-          
-        process.on('unhandledRejection', (reason, promise) => {
-          logger.error('Unhandled rejection at:', promise, 'reason:', reason);
-        });
-          
-      } catch (error) {
-        logger.error('Failed to initialize WebSocket server', error);
-        throw error;
+  try {
+    await connectWithLoop();
+    logger.info('WebSocket server initialized successfully');
+    
+    // Setup reconnection on disconnect
+    wsManager.onDisconnect(() => {
+      logger.warn('WebSocket disconnected, attempting to reconnect...');
+      connectWithLoop();
+    });
+      
+    // Setup global error handlers to reconnect if needed
+    process.on('uncaughtException', (error) => {
+      logger.error('Uncaught exception:', error);
+      // Only attempt reconnection if it's a WebSocket related error
+      if (error.message && error.message.includes('WebSocket')) {
+        connectWithLoop();
       }
-  };
+    });
+      
+    process.on('unhandledRejection', (reason: any, promise) => {
+      logger.error('Unhandled rejection at:', promise, 'reason:', reason);
+      // Only attempt reconnection if it's a WebSocket related error
+      if (reason && reason.message && reason.message.includes('WebSocket')) {
+        connectWithLoop();
+      }
+    });
+      
+  } catch (error) {
+    logger.error('Failed to initialize WebSocket server', error);
+    throw error;
+  }
+};
+
+// Function to handle WebSocket connection with loop-based retry logic
+const connectWithLoop = async (maxAttempts = 10000, initialDelay = 1000) => {
+  let attempt = 1;
+  let connected = false;
+  
+  while (!connected && attempt <= maxAttempts) {
+    try {
+      await wsManager.connect();
+      logger.info('WebSocket connection established successfully');
+      connected = true;
+    } catch (error) {
+      const delay = initialDelay * Math.pow(1.5, attempt - 1); // Exponential backoff
+      
+      logger.warn(`WebSocket connection failed (attempt ${attempt}/${maxAttempts}). Retrying in ${delay}ms...`);
+      
+      // Use a promise-based setTimeout for async/await compatibility
+      await new Promise(resolve => setTimeout(resolve, delay));
+      attempt++;
+    }
+  }
+  
+  if (!connected) {
+    logger.error(`Failed to connect to WebSocket after ${maxAttempts} attempts.`);
+    logger.info('Server will continue running without WebSocket functionality');
+  }
+  
+  return connected;
+};
   
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -63,5 +106,3 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 startServer();
-
-

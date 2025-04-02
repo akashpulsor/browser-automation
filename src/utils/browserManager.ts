@@ -16,7 +16,8 @@ export class BrowserManager {
   static async createPage(browser: Browser): Promise<Page> {
     try {
       const page = await browser.newPage();
-      await page.setViewport({ width: 1920, height: 1080 });
+      await page.setViewport({  width: 1500, height: 768,
+        deviceScaleFactor: 1 });
       return page;
     } catch (error) {
       logger.error('Failed to create page', error);

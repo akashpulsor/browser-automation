@@ -6,6 +6,7 @@ export default class WebSocketClientManager {
   private static instance: WebSocketClientManager;
   private socket: WebSocket | null = null;
   private config: WebSocketClientConfig;
+  private disconnectHandlers: Array<() => void> = [];
 
   private constructor(customConfig?: Partial<WebSocketClientConfig>) {
     this.config = {
@@ -34,6 +35,10 @@ export default class WebSocketClientManager {
         this.socket.on('open', () => {
           logger.info(`WebSocket connected to ${this.config.url}`);
           resolve();
+        });
+
+        this.socket.on('error', (error) => {
+          reject(error);
         });
 
         this.setupListeners();
@@ -67,6 +72,8 @@ export default class WebSocketClientManager {
         code, 
         reason: reason.toString('utf8') 
       });
+      // Trigger disconnect handlers
+      this.disconnectHandlers.forEach(handler => handler());
     });
 
     this.socket.on('error', (error: Error) => {
@@ -103,6 +110,11 @@ export default class WebSocketClientManager {
     return this.socket !== null && this.socket.readyState === WebSocket.OPEN;
   }
 
+  // Register disconnect handler
+  public onDisconnect(handler: () => void): void {
+    this.disconnectHandlers.push(handler);
+  }
+
   // Get current configuration
   public getConfig(): WebSocketClientConfig {
     return { ...this.config };
@@ -114,25 +126,5 @@ export default class WebSocketClientManager {
       ...this.config,
       ...newConfig
     };
-  }
-}
-
-// Example usage
-async function exampleUsage() {
-  // Get instance with default config (includes URL from config file)
-  const wsClient = WebSocketClientManager.getInstance();
-  
-  // Alternatively, override specific config options
-  // const wsClient = WebSocketClientManager.getInstance({ 
-  //   url: 'ws://localhost:8080/api/call/browser'
-  // });
-  
-  try {
-    await wsClient.connect();
-    
-    // Send a message
-    wsClient.send({ type: 'greeting', message: 'Hello, server!' });
-  } catch (error) {
-    console.error('Connection failed', error);
   }
 }

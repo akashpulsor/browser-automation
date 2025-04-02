@@ -19,10 +19,7 @@ export class BrowserSessionManager {
   async createSession(url: string) {
     try {
       const session = await this.browserService.launchBrowser(url);
-      this.websocketService.sendMessage(JSON.stringify({
-        type: 'SESSION_CREATED',
-        sessionId: session.id
-      }));
+
       return session;
     } catch (error) {
       logger.error('Failed to create browser session', error);

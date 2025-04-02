@@ -15,7 +15,8 @@ export class BrowserController {
   }
 
   async launchBrowser(req: Request) {
-    const { url, sessionId,portalId,llmId, browserSessionId } = req.body;
+    const { url, sessionId,portalId,llmId, browserSessionId,campaignId, businessId } = req.body;
+    console.log(req.body);
     try {
       if (!url) {
         throw new Error('URL is required');
@@ -32,15 +33,17 @@ export class BrowserController {
                     browserRunId: session.id,
                     sessionId: sessionId,
                     portalId:portalId,
+                    campaignId: campaignId,
+                    businessId: businessId,
                     llmId: llmId,
                     browserSessionId: browserSessionId,
                     launchedUrl: url,
                     timestamp: new Date().toISOString(),
-                    metadata:metadata
+                    metaData:metadata
                     // Consider sending the full element list and DOM snapshot in chunks or on demand
                   };
-                console.log(res);  
-                this.websocketClientManager.send(res);
+                //console.log(res);  
+                this.websocketClientManager.send(res);  
                 logger.info(`Sent initial session data with info for elements (limited), DOM snapshot snippet, and screenshot (limited) to WebSocket`, { sessionId: session.id });
               } else {
                 logger.warn('WebSocket is not connected, cannot send initial session data.');
@@ -48,13 +51,13 @@ export class BrowserController {
         }
 
         // Send data to WebSocket after launching the session
-        const streamResult = await this.startStream(session.id, 100); // Stream every 100ms
-        console.log(streamResult);
+        //const streamResult = await this.startStream(session.id, 100); // Stream every 100ms
+        //console.log(streamResult);
         
       return { 
         message: 'Browser launched successfully', 
         sessionId: session.id ,
-        stream:streamResult
+        //stream:streamResult
       };
     } catch (error) {
       logger.error('Failed to launch browser', error);

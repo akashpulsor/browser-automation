@@ -12,7 +12,6 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
   };
 
 router.post('/launch', asyncHandler(async (req: Request, res: Response) => {
-  console.log(req);
   const result = await browserController.launchBrowser(req);
   res.json(result);
 }));
